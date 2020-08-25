@@ -2,53 +2,70 @@
 require "logstash/outputs/base"
 require 'cassandra'
 require 'json'
+require_relative './tool_adaptive.rb'
 
 # An mycrassandra output that does nothing.
 class LogStash::Outputs::Mycrassandra < LogStash::Outputs::Base
-  attr_accessor :result, :keyspace, :cluster, :session
+  attr_accessor :result, :keyspace, :cluster, :session, :tool
   config_name "mycrassandra"
   config :cra_database, :validate => :string, :default => "zipkin2"
   # config :cra_table, :validate => :string, :default => "zipkin2"
   config :cra_name, :validate => :string, :default => "root"
-  config :cra_pwd, :validate => :string, :default => "123456"
-  config :cra_hosts, :validate => :string, :default => "192.168.244.10"
-  config :cqlFile_path, :validate => :string, :default => "/cql.conf"
+  config :cra_pwd, :validate => :string, :default => "root123"
+  config :cra_hosts, :validate => :array, :default => ['192.100.5.59']
+  config :cqlFile_path, :validate => :string, :default => "cql.conf"
 
   @@calc_count = 0
 
   public
 
   def register
-    puts "=========begin  register==================="
-    @cluster = Cassandra.cluster(username: cra_name,
+    @logger.info("register  beging===============================================")
+       @cluster = Cassandra.cluster(username: cra_name,
                                  password: cra_pwd,
-                                 hosts: [cra_hosts])
+                                 hosts: cra_hosts)
     @keyspace = cra_database
-    @session = @cluster.connect(@keyspace) # create session, optionally scoped to a keyspace, to execute queries
+    #  @session = @cluster.connect(@keyspace) # create session, optionally scoped to a keyspace, to execute queries
     @cluster.each_host do |host| # automatically discovers all peers
-      puts "Host #{host.ip}: id=#{host.id} datacenter=#{host.datacenter} rack=#{host.rack}"
-      puts "=========end  register==================="
+      @logger.info("Host #{host.ip}: id=#{host.id} datacenter=#{host.datacenter} rack=#{host.rack}")
+
+    end
+    connect_dra #创建session
+    @tool = Tool_adaptive.new #创建工具
+    @logger.info("register  end===============================================")
+  end
+
+
+  def connect_dra
+    begin
+      @session = @cluster.connect(@keyspace)
+    rescue IOError => e
+      @logger.info("ex===fromm  connect_dra  ,sleeping...#{e.message}")
+      @cluster.each_host do |host| # automatically discovers all peers
+        @logger.warn("Host #{host.ip}: id=#{host.id} datacenter=#{host.datacenter} rack=#{host.rack}")
+      end
+      sleep(2)
+      retry
     end
   end
 
   public
 
   def receive(event)
-    puts "=====================================================begin receive================================================"
+
     begin
       myobject = {}.merge(event.to_hash)
-      puts "myobject:====#{myobject.class}===============#{myobject}"
+
     rescue Exception => e
-      puts "parse event ====>ex===>#{ e.message }"
+      @logger.warn("parse event ====>ex===>#{ e.message }")
       raise e
     end
     mess = myobject['message'].to_s
-    puts "begin==#{mess.class}========mess=====================>#{mess}<============mess=====================end"
+
     logs = JSON.parse mess.gsub(/\\/, '')
     class_type = logs.class.to_s
-    puts "class_type=====#{class_type}"
     if "Array" == class_type
-      puts "check arr_log-class #{logs.class}========test element: #{logs[0]['traceId']} "
+
       for mydoc in logs
         #model1
         #cql_cra = parse_cql(mydoc)  ###计划使用自己定义的配置文件解析cql
@@ -63,24 +80,29 @@ class LogStash::Outputs::Mycrassandra < LogStash::Outputs::Base
       end
 
     end
-    puts "current calc_count:===>#{@@calc_count}"
-    puts "========end receive========================="
+    @logger.info("current calc_count:===>#{@@calc_count}")
     return "event  received"
   end
 
   def insert_run(mydoc)
     begin
-
-      cql_str =  File.read(cqlFile_path)
+      cql_str = File.read(cqlFile_path)
       cql_h = eval(cql_str)
-      puts cql_h.class
-      for v in cql_h.values
-        puts v
-        @session.execute(v)
+      cql_h.each do |k, v|
+        execute_cql(k, v)
       end
     rescue Exception => e
-      puts "insert_run  method raise ex ====>#{e.message}"
+      @logger.warn("insert_run  method raise ex ====>#{e.message}")
       raise e
+    end
+  end
+
+  def execute_cql(k, v)
+    begin
+      @session.execute(v)
+    rescue Exception => e
+      @logger.warn("ex====from execute_cql===next connect_dra====e===>#{e.message}===error insert ========#{k}=========>#{v}<======")
+      connect_dra
     end
   end
 end

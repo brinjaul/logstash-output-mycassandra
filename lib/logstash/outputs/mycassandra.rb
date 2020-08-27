@@ -10,10 +10,10 @@ class LogStash::Outputs::Mycassandra < LogStash::Outputs::Base
   attr_accessor :result, :keyspace, :cluster, :session, :tool, :batch, :cql_h, :loggerNum
   config_name "mycassandra"
   config :cra_database, :validate => :string, :default => "zipkin2"
-  config :cra_name, :validate => :string, :default => "root"
-  config :cra_pwd, :validate => :string, :default => "root123"
-  config :cra_hosts, :validate => :array, :default => ['192.100.3.57']
-  config :cqlFile_path, :validate => :string, :default => "cql.conf"
+  config :cra_name, :validate => :string, :default => "xxx"
+  config :cra_pwd, :validate => :string, :default => "xxx"
+  config :cra_hosts, :validate => :array, :default => ['192.168.xx.xx']
+  config :cqlFile_path, :validate => :string, :default => "cql.conf" #此文件默认设置会在logstash默认的安装目录下
 
   @@calc_count = 0
 

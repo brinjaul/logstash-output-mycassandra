@@ -1,12 +1,12 @@
 # encoding: utf-8
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/outputs/mycrassandra"
+require "logstash/outputs/mycassandra"
 require "logstash/codecs/plain"
 require "logstash/event"
 
-describe LogStash::Outputs::Mycrassandra do
+describe LogStash::Outputs::Mycassandra do
   let(:sample_event) { LogStash::Event.new }
-  let(:output) { LogStash::Outputs::Mycrassandra.new }
+  let(:output) { LogStash::Outputs::Mycassandra.new }
 
   before do
     output.register

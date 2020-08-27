@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name          = 'logstash-output-mycrassandra'
+  s.name          = 'logstash-output-mycassandra'
   s.version       = '0.1.0'
   s.licenses      = ['Apache-2.0']
   s.summary       = 'cassandra for logstash plugin'

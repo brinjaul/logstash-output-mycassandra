@@ -15,18 +15,36 @@ class Tool_adaptive
       raise "q2Toq1ForHash mentod  access only Hash type"
     end
   end
+
+  # def hash_adaptive_mapCra(hstr)
+  #   return nil if hstr == nil
+  #   if "Hash" == hstr.class.to_s #  Hash =>"Hash"
+  #     ##为了转义一些特殊字符
+  #     realstr = hstr.to_json
+  #     rs = realstr.gsub(/["]/, '$$')
+  #   else
+  #     raise "q2Toq1ForHash mentod  access only Hash type"
+  #   end
+  # end
+  # #这里仅能支持  json  的内容中没有双引号和单引号的情况下，这是业务的问题，不应该放在这里进行解析，如果想解析，最好的办法是，直接替换掉特殊字符，然后全部k,v加上$$。
   def hash_adaptive_mapCra(hstr)
     return nil if hstr == nil
     if "Hash" == hstr.class.to_s #  Hash =>"Hash"
       ##为了转义一些特殊字符
       realstr = hstr.to_json
-      rs = realstr.gsub(/["]/, '$$')
+      if realstr.include? '$$'
+        rs = realstr.gsub(/["]/, '\'')
+        return  rs
+      else
+        rs = realstr.gsub(/["]/, '$$')
+        return  rs
+      end
     else
       raise "q2Toq1ForHash mentod  access only Hash type"
     end
   end
 
-#引号 quotes  1-->2
+  #引号 quotes  1-->2
   def q1Toq2ForStr(str)
     return nil if str == nil
     if "String" == str.class.to_s #  Hash =>"Hash"
@@ -37,7 +55,7 @@ class Tool_adaptive
     end
   end
 
-#适用 于自定义类型插入时
+  #适用 于自定义类型插入时
   def hash_adaptive_customCra(hstr) #带有字符的
     return nil if hstr == nil
     begin
@@ -65,6 +83,9 @@ class Tool_adaptive
       puts("==ex===from   noQuouteForHash =======#{e.message}")
     end
   end
+
+
+
 
 end
 
